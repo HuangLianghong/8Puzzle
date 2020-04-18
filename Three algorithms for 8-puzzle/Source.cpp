@@ -26,229 +26,330 @@ public:
 };
 vector <node> v;
 node father, intent;
-void node::voluation(int index) {
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            number[i][j] = v[index].number[i][j];
-        }
+#include <iostream>
+#include <queue>
+#include <stack>
+#include <vector>
+#include <algorithm>
+#include <memory.h>
+
+using namespace std;
+
+// 八数码状态
+typedef struct _Status {
+    int status[3][3];
+    _Status* parent;
+    _Status* next;
+    string action;
+}Status;
+
+// AStar排序依据
+bool decComparator(const Status& s1, const Status& s2) {
+    int gn1 = 0, gn2 = 0;
+    int dn1 = 0, dn2 = 0;
+    const Status* ptr1 = &s1;
+    const Status* ptr2 = &s2;
+    int status[3][3] = { 0,1,2,3,4,5,6,7,8 };
+    while (ptr1 != NULL) {
+        gn1 += 1;
+        ptr1 = ptr1->parent;
     }
-}
-int node::dis() {
-    int s = 0;
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            if (number[i][j] != intent.number[i][j]) {
-                s = s + 1;
+    while (ptr2 != NULL) {
+        gn2 += 1;
+        ptr2 = ptr2->parent;
+    }
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (s1.status[i][j] != status[i][j]) {
+                dn1 += 1;
+            }
+            if (s2.status[i][j] != status[i][j]) {
+                dn2 += 1;
             }
         }
     }
-    distances = s;
-    return s;
+    return (gn1 + dn1) > (gn2 + dn2);
 }
 
-bool node::isend() {
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            if (number[i][j] != intent.number[i][j]) {
-                return false;
-            }
-        }
+// 八数码搜索
+class EightPuzzle {
+private:
+    unsigned char allHash[362880];
+    Status root;
+    Status goal;
+private:
+    //下一可行状态的数量
+    int nextNumber;
+    Status next[4];
+public:
+    EightPuzzle(Status* root, Status* goal) {
+        memcpy(&this->root.status, &root->status, sizeof(int) * 9);
+        this->root.parent = NULL;
+        this->root.next = NULL;
+        memcpy(&this->goal.status, &goal->status, sizeof(int) * 9);
+        this->goal.parent = NULL;
+        this->goal.next = NULL;
     }
-    return true;
-}
-bool node::isequal(node q) {
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            if (number[i][j] != q.number[i][j]) {
-                return false;
-            }
-        }
+private:
+    // 判断是否是目标状态
+    inline int IsGoal(Status* tmp) {
+        return memcmp(&tmp->status, &goal.status, sizeof(int) * 9);
     }
-    return true;
-}
-bool isexpansive(node& n) {
-    for (int i = 0; i < v.size(); i++) {
-        if (v[i].isequal(n)) {
-            return false;
-        }
-    }
-    return true;
-}
-bool isempty() {
-    for (int i = 0; i < v.size(); i++) {
-        if (v[i].distances != maxnum) {
-            return false;
-        }
-    }
-    return true;
-}
-int find_min() {
-    int min_x = maxnum;
-    int index_min;
-    for (int i = 0; i < v.size(); i++) {
-        if (v[i].distances + v[i].depth < min_x) {
-            index_min = i;
-            min_x = v[i].distances + v[i].depth;
-        }
-    }
-    return index_min;
-}
-void swap_t(int& a, int& b) {
-    int t;
-    t = a;
-    a = b;
-    b = t;
-}
-void breath(int index) {
-    int index_x, index_y;
-    int flag = 0;
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            if (v[index].number[i][j] == 0) {
-                index_x = i;
-                index_y = j;
-                flag = 1;
-                break;
-            }
-            if (flag == 1) {
+    // 下一个可行的状态
+    int NextStatus(Status* tmp) {
+        nextNumber = 0;
+        int posi, posj;
+        for (int i = 0; i < 9; i++) {
+            posi = i / 3, posj = i - i / 3 * 3;
+            if (tmp->status[posi][posj] == 0) {
                 break;
             }
         }
-    }
-    node upnode, downnode, leftnode, rightnode;
-    upnode.voluation(index);
-    downnode.voluation(index);
-    leftnode.voluation(index);
-    rightnode.voluation(index);
-    int up_dis = maxdistance;
-    int down_dis = maxdistance;
-    int left_dis = maxdistance;
-    int right_dis = maxdistance;
-    if (index_x > 0) {
-        swap_t(upnode.number[index_x][index_y], upnode.number[index_x - 1][index_y]);
-        if (isexpansive(upnode)) {
-            up_dis = upnode.dis();
-            upnode.findex = index;
-            upnode.depth = v[index].depth + 1;
-            upnode.str = "up";
-            v.push_back(upnode);
+        if (posi - 1 >= 0) {
+            Status left = *tmp;
+            left.status[posi][posj] = left.status[posi - 1][posj];
+            left.status[posi - 1][posj] = 0;
+            left.action = "up";
+            if (allHash[Cantor(left.status)] == 0) {
+                next[nextNumber] = left;
+                next[nextNumber].parent = tmp;
+                nextNumber++;
+            }
         }
-    }
-    if (index_x < 2) {
-        swap_t(downnode.number[index_x][index_y], downnode.number[index_x + 1][index_y]);
-        if (isexpansive(downnode)) {
-            down_dis = downnode.dis();
-            downnode.findex = index;
-            downnode.depth = v[index].depth + 1;
-            downnode.str = "down";
-            v.push_back(downnode);
+        if (posi + 1 <= 2) {
+            Status right = *tmp;
+            right.status[posi][posj] = right.status[posi + 1][posj];
+            right.status[posi + 1][posj] = 0;
+            right.action = "down";
+            if (allHash[Cantor(right.status)] == 0) {
+                next[nextNumber] = right;
+                next[nextNumber].parent = tmp;
+                nextNumber++;
+            }
         }
-    }
-    if (index_y > 0) {
-        swap_t(leftnode.number[index_x][index_y], leftnode.number[index_x][index_y - 1]);
-        if (isexpansive(leftnode)) {
-            left_dis = leftnode.dis();
-            leftnode.findex = index;
-            leftnode.depth = v[index].depth + 1;
-            leftnode.str = "left";
-            v.push_back(leftnode);
+        if (posj - 1 >= 0) {
+            Status up = *tmp;
+            up.status[posi][posj] = up.status[posi][posj - 1];
+            up.status[posi][posj - 1] = 0;
+            up.action = "left";
+            if (allHash[Cantor(up.status)] == 0) {
+                next[nextNumber] = up;
+                next[nextNumber].parent = tmp;
+                nextNumber++;
+            }
         }
-    }
-    if (index_y < 2) {
-        swap_t(rightnode.number[index_x][index_y], rightnode.number[index_x][index_y + 1]);
-        if (isexpansive(rightnode)) {
-            right_dis = rightnode.dis();
-            rightnode.findex = index;
-            rightnode.depth = v[index].depth + 1;
-            rightnode.str = "right";
-            v.push_back(rightnode);
+        if (posj + 1 <= 2) {
+            Status down = *tmp;
+            down.status[posi][posj] = down.status[posi][posj + 1];
+            down.status[posi][posj + 1] = 0;
+            down.action = "right";
+            if (allHash[Cantor(down.status)] == 0) {
+                next[nextNumber] = down;
+                next[nextNumber].parent = tmp;
+                nextNumber++;
+            }
         }
+        return nextNumber;
     }
-    v[index].distances = maxnum;
-}
-ostream& operator<<(ostream& os, node& no)
-{
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++)
-            os << no.number[i][j] << ' ';
-        os << endl;
-    }
-    return os;
-}
-void print(int index, vector<node>& rstep_v)
-{
-
-    rstep_v.push_back(v[index]);
-    index = v[index].findex;
-    while (index != 0)
-    {
-        rstep_v.push_back(v[index]);
-        index = v[index].findex;
-    }
-
-
-    for (int i = rstep_v.size() - 1; i >= 0; i--) {
-        cout << "Step " << rstep_v.size() - i << ":";
-        node p = rstep_v[i];
-        cout << p.str << endl;
-        //cout << p << endl;
-    }
-}
-void Astar() {
-    while (1) {
-        int t = 0;
-        if (isempty()) {
-            cout << "error" << endl;
-            exit(-1);
+    // 康托展开
+    int Cantor(int arr[][3]) {
+        int fac[10] = { 1,1,2,6,24,120,720,5040,40320,362880 };
+        int index = 0;
+        for (int i = 7; i >= 0; i--) {
+            int irow = i / 3, icol = i - i / 3 * 3;
+            int count = 0;
+            for (int j = 8; j > i; j--) {
+                int jrow = j / 3, jcol = j - j / 3 * 3;
+                if (arr[jrow][jcol] < arr[irow][icol]) {
+                    count++;
+                }
+            }
+            index += (count * fac[8 - i]);
         }
-
+        return index;
+    }
+private:
+    Timer BFSTime, DFSTime, ASTime;
+    int stepNum;
+public:
+    // 广度优先搜索
+    int BFS() {
+        BFSTime.start();
+        stepNum = 0;
+        int step = 0;
+        memset(allHash, 0, 362880);
+        queue<Status> openTable;
+        Status* closeTable = new Status;;
+        Status* current = closeTable;
+        Status* tmp;
+        openTable.push(root);
+        allHash[Cantor(root.status)] == 1;
+        while (!openTable.empty()) {
+            tmp = new Status;
+            *tmp = openTable.front();
+            openTable.pop();
+            step++;
+            current->next = tmp;
+            current = current->next;
+            if (IsGoal(tmp) == 0) {
+                PrintPath(tmp);
+                freeCloseTable(closeTable);
+                BFSTime.end();
+                return step;
+            }
+            int nextNumber = NextStatus(tmp);
+            if (nextNumber == 0) {
+                continue;
+            }
+            for (int i = 0; i < nextNumber; i++) {
+                openTable.push(next[i]);
+                allHash[Cantor(next[i].status)] == 1;
+            }
+        }
+        cout << "BFS failed." << endl;
+        freeCloseTable(closeTable);
+        
+        return -1;
+    }
+    // 深度优先搜索
+    int DFS() {
+        DFSTime.start();
+        stepNum = 0;
+        int depth = 0;
+        int step = 0;
+        stack<Status> openTable;
+        Status* closeTable = new Status;;
+        Status* current = closeTable;
+        Status* last;
+        Status* tmp;
+        openTable.push(root);
+        while (!openTable.empty()) {
+            tmp = new Status;
+            *tmp = openTable.top();
+            openTable.pop();
+            step++;
+            current->next = tmp;
+            current = current->next;
+            if (IsGoal(tmp) == 0) {
+                PrintPath(tmp);
+                freeCloseTable(closeTable);
+                DFSTime.end();
+                return step;
+            }
+            memset(allHash, 0, 362880);
+            last = tmp;
+            depth = 0;
+            while (last != NULL) {
+                allHash[Cantor(last->status)] = 1;
+                last = last->parent;
+                depth++;
+            }
+            if (depth > 8) {
+                continue;
+            }
+            int nextNumber = NextStatus(tmp);
+            if (nextNumber == 0) {
+                continue;
+            }
+            for (int i = 0; i < nextNumber; i++) {
+                openTable.push(next[i]);
+            }
+        }
+        cout << "DFS failed." << endl;
+        freeCloseTable(closeTable);
+        
+        return -1;
+    }
+    // 启发式搜索
+    int AStar() {
+        ASTime.start();
+        stepNum = 0;
+        int step = 0;
+        memset(allHash, 0, 362880);
+        vector<Status> openTable;
+        Status* closeTable = new Status;;
+        Status* current = closeTable;
+        Status* tmp;
+        openTable.push_back(root);
+        allHash[Cantor(root.status)] == 1;
+        while (!openTable.empty()) {
+            tmp = new Status;
+            *tmp = openTable[openTable.size() - 1];
+            openTable.pop_back();
+            step++;
+            current->next = tmp;
+            current = current->next;
+            if (IsGoal(tmp) == 0) {
+                PrintPath(tmp);
+                freeCloseTable(closeTable);
+                ASTime.end();
+                return step;
+            }
+            int nextNumber = NextStatus(tmp);
+            if (nextNumber == 0) {
+                continue;
+            }
+            for (int i = 0; i < nextNumber; i++) {
+                openTable.push_back(next[i]);
+                allHash[Cantor(next[i].status)] == 1;
+            }
+            sort(openTable.begin(), openTable.end(), decComparator);
+        }
+        cout << "AStar failed." << endl;
+        freeCloseTable(closeTable);
+        
+        return -1;
+    }
+    // 打印时间
+    void PrintBFSTime(){
+        cout << "BFS耗时：" << BFSTime.aver_time() << endl;
+    }
+    void PrintDFSTime() {
+        cout << "DFS耗时：" << DFSTime.aver_time() << endl;
+    }
+    void PrintAStime() {
+        cout << "A*耗时：" << ASTime.aver_time() << endl;
+    }
+private:
+    // 打印路径
+    void PrintPath(Status* head) {
+        if (head == NULL) {
+            return;
+        }
         else {
-            int best = find_min();
-            node temp = v[best];
-            if (temp.isend()) {
-                t = 1;
-                vector<node> rstep_v;
-                print(best, rstep_v);
-
-            }
-            else {
-                breath(best);
-            }
+            PrintPath(head->parent);
+            if (stepNum == 0) stepNum++;
+            else
+                cout <<"step"<< stepNum++ <<":" << head->action << endl;
         }
-        if (t)
-            break;
     }
-}
+    // 释放close表
+    void freeCloseTable(Status* closeTable) {
+        Status* current;
+        while (closeTable != NULL) {
+            current = closeTable->next;
+            free(closeTable);
+            closeTable = current;
+        }
+    }
+};
 
 int main()
 {
-    Timer c1;
-
-    //{7,2,4},{5,0,6},{8,3,1}
-    vector<vector<int>> BEGIN = { {7,2,4},{5,0,6},{8,3,1} };
-    vector<vector<int>> TARGET = { {0,1,2},{3,4,5},{6,7,8} };
-
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            father.number[i][j] = BEGIN[i][j];
-        }
-    }
-    father.findex = 0;
-    father.depth = 0;
- 
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            intent.number[i][j] = TARGET[i][j];
-        }
-    }
-    v.push_back(father);
-
-    c1.reset();
-    c1.start();
-    Astar();
-    c1.end();
-    cout << c1.aver_time() <<" s" << endl;
-
-    system("pause");
+    Status init = { 7,2,4,5,0,6,8,3,1,0,NULL };
+    Status goal = { 0,1,2,3,4,5,6,7,8,0,NULL };
+    EightPuzzle ep = EightPuzzle(&init, &goal);
+    cout << "BFS********" << endl;
+    cout << "Total search steps: " << ep.BFS() << endl;
+    ep.PrintBFSTime();
+    cout << "***********\n" << endl;
+    cout << "DFS********" << endl;
+    cout << "Total search steps: " << ep.DFS() << endl;
+    ep.PrintDFSTime();
+    cout << "***********\n" << endl;
+    cout << "AStar******" << endl;
+    cout << "Total search steps: " << ep.AStar() << endl;
+    ep.PrintAStime();
+    cout << "***********\n" << endl;
     return 0;
 }
