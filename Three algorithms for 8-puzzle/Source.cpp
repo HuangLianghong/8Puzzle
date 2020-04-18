@@ -203,7 +203,7 @@ public:
             }
             for (int i = 0; i < nextNumber; i++) {
                 openTable.push(next[i]);
-                allHash[Cantor(next[i].status)] == 1;
+                allHash[Cantor(next[i].status)] = 1;
             }
         }
         cout << "BFS failed." << endl;
@@ -244,7 +244,9 @@ public:
                 last = last->parent;
                 depth++;
             }
-            if (depth > 8) {
+            
+            //可用于限制搜索深度
+            if (depth > 100) {
                 continue;
             }
             int nextNumber = NextStatus(tmp);
@@ -291,7 +293,7 @@ public:
             }
             for (int i = 0; i < nextNumber; i++) {
                 openTable.push_back(next[i]);
-                allHash[Cantor(next[i].status)] == 1;
+                allHash[Cantor(next[i].status)] = 1;
             }
             sort(openTable.begin(), openTable.end(), decComparator);
         }
@@ -343,10 +345,12 @@ int main()
     cout << "Total search steps: " << ep.BFS() << endl;
     ep.PrintBFSTime();
     cout << "***********\n" << endl;
+
     cout << "DFS********" << endl;
     cout << "Total search steps: " << ep.DFS() << endl;
     ep.PrintDFSTime();
     cout << "***********\n" << endl;
+
     cout << "AStar******" << endl;
     cout << "Total search steps: " << ep.AStar() << endl;
     ep.PrintAStime();
