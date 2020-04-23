@@ -183,7 +183,7 @@ public:
         Status* current = closeTable;
         Status* tmp;
         openTable.push(root);
-        allHash[Cantor(root.status)] == 1;
+        allHash[Cantor(root.status)] = 1;
         while (!openTable.empty()) {
             tmp = new Status;
             *tmp = openTable.front();
@@ -341,14 +341,15 @@ int main()
     Status init = { 7,2,4,5,0,6,8,3,1,0,NULL };
     Status goal = { 0,1,2,3,4,5,6,7,8,0,NULL };
     EightPuzzle ep = EightPuzzle(&init, &goal);
-    cout << "BFS********" << endl;
-    cout << "Total search steps: " << ep.BFS() << endl;
-    ep.PrintBFSTime();
-    cout << "***********\n" << endl;
-
+    
     cout << "DFS********" << endl;
     cout << "Total search steps: " << ep.DFS() << endl;
     ep.PrintDFSTime();
+    cout << "***********\n" << endl;
+
+    cout << "BFS********" << endl;
+    cout << "Total search steps: " << ep.BFS() << endl;
+    ep.PrintBFSTime();
     cout << "***********\n" << endl;
 
     cout << "AStar******" << endl;
